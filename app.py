@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException, status, Depends
-import secrets
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -7,7 +6,6 @@ from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignK
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-import os
 from dotenv import load_dotenv
 
 
@@ -16,6 +14,7 @@ security = HTTPBasic()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 load_dotenv()
 
+# Adding the database
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./todo_app.db"
 # SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
@@ -27,6 +26,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
+#  Defininig models 
 
 class Todo(Base):
     __tablename__ = "todos"
@@ -51,6 +51,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # def get_db(credentials: HTTPBasicCredentials = Depends(security)):
 #     db = SessionLocal()
@@ -83,6 +84,7 @@ def authenticate_user(db, username: str, password: str):
         return False
     return user
 
+# Endpoint to create a new user ***
 @app.post("/users")
 def create_user(username: str, password: str, db: Session = Depends(get_db)):
     hashed_password = pwd_context.hash(password)
@@ -91,6 +93,8 @@ def create_user(username: str, password: str, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     return user
+
+# Api to fetch 1 to 100 tasks***
 
 @app.get("/todos")
 def read_todos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
@@ -104,6 +108,7 @@ def read_todos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), c
     todos = db.query(Todo).offset(skip).limit(limit).all()
     return todos
 
+# Endpoint to create a new task and add title ***
 
 @app.post("/todos")
 def create_todo(title: str, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
@@ -120,6 +125,7 @@ def create_todo(title: str, db: Session = Depends(get_db), credentials: HTTPBasi
     db.refresh(todo)
     return todo
 
+#API to get specfic tasks from db  ***
 
 @app.get("/todos/{id}")
 def read_todo(id: int, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
@@ -135,6 +141,8 @@ def read_todo(id: int, db: Session = Depends(get_db), credentials: HTTPBasicCred
         raise HTTPException(status_code=404, detail="Todo not found")
     return todo
 
+
+# Endpoint to update toto tasks ***
 
 @app.put("/todos/{id}")
 def update_todo(id: int, title: str = None, completed: bool = None, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
@@ -158,6 +166,7 @@ def update_todo(id: int, title: str = None, completed: bool = None, db: Session 
     return todo
 
 
+# Endpoint to delete the task in todo *** 
 
 @app.delete("/todos/{id}")
 def delete_todo(id: int, db: Session = Depends(get_db), credentials: HTTPBasicCredentials = Depends(security)):
